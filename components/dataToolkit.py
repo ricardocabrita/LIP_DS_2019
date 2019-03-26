@@ -7,6 +7,8 @@ from sklearn.preprocessing import normalize
 
 from gwpy.timeseries import TimeSeries
 
+import pywt
+
 LABEL_MAP = {
     'Scattered_Light': 0,
     'Repeating_Blips': 1,
@@ -51,21 +53,28 @@ class dataToolkit(object):
         self.y = np.asarray(self.y)
 
     def getTimeSeries(self, glitch_name, idx=0):
+        found = False
         glitch_df = self.metadata_df.loc[self.metadata_df["label"]==glitch_name]
-        if(len(glitch_df) < idx):
-            glitch_id= glitch_df.iloc[len(glitch_df)-1]["id"]
-            print("Index is greater than max number of glitches")
+        if(len(glitch_df) <= idx):
+            #glitch_id= glitch_df.iloc[len(glitch_df)-1]["id"]
+            #print("Index is greater than max number of glitches")
+            return False
         else:
             glitch_id= glitch_df.iloc[idx]["id"]
 
         data_dir_hdf5 = os.path.join(os.path.dirname(os.getcwd()),"data") + "/hdf5"
-        print(data_dir_hdf5)
         for file in os.listdir(data_dir_hdf5):
             if glitch_id in file:
                 self.h5=h5py.File(os.path.join(data_dir_hdf5, file), 'r')
+                found = True
+        
+        if(found):
+            self.strain = self.h5["Strain"]["Strain"].value
+        else:
+            print("Did not update strain!")
+        return True
 
     def plotTimeSeries(self):
-        self.strain = self.h5["Strain"]["Strain"].value
         self.GPSstart = self.h5["Strain"]["Strain"].attrs["GPSstart"]
         self.GPSend = self.h5["Strain"]["Strain"].attrs["GPSend"]
         self.Sample_Rate = self.h5["Strain"]["Strain"].attrs["Sample_Rate"]
@@ -91,5 +100,41 @@ class dataToolkit(object):
         sp.plot(self.time, self.whitened)
         return f
 
+    def getExtraFeatures(self):
+        t = True
+        i = 0
+        count = 0
+        cAmean_list = []
+        cAstd_list = []
+        cDmean_list = []
+        cDstd_list = []
+        for key in LABEL_MAP:
+            i = 0
+            t = True
+            while(t == True):
+                t = self.getTimeSeries(key, i)
+                cAmean, cD3mean, cD2mean, cD1mean = self.getWaveletIndicators(self.strain)
+                cAmean_list.append(cAmean)
+                cAstd_list.append(cD3mean)
+                cDmean_list.append(cD2mean)
+                cDstd_list.append(cD1mean)
+                i+=1
+                count += 1
+                if(count == 6667):
+                    break
+            if(count == 6667):
+                break
+                
+        return cAmean_list, cDmean_list, cAstd_list, cDstd_list
+    
+    def getWaveletIndicators(self, ts):
+        normalized=(ts-ts.min())/(ts.max()-ts.min())
+        #print(normalized)
+        np.nan_to_num(normalized, copy=False)
+        cA, cD3, cD2, cD1 = pywt.wavedec(normalized*10000, 'dmey', level=3)
+        return np.mean(cA), np.mean(cD3), np.mean(cD2), np.mean(cD1)
+    
     def close(self):
         self.h5.close()
+        
+     
