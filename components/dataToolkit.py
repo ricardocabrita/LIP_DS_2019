@@ -10,28 +10,29 @@ from gwpy.timeseries import TimeSeries
 import pywt
 
 LABEL_MAP = {
-    'Scattered_Light': 0,
-    'Repeating_Blips': 1,
-    'Violin_Mode': 2,
-    'Power_Line': 3,
-    'Whistle': 4,
-    'Scratchy': 5,
-    'Helix': 6,
-    'Light_Modulation': 7,
-    'Wandering_Line': 8,
-    'Low_Frequency_Burst': 9,
-    'Koi_Fish': 10,
-    'Low_Frequency_Lines': 11,
-    'Blip': 12,
-    '1400Ripples': 13,
-    'Chirp': 14,
-    'Extremely_Loud': 15,
+    'Scattered_Light': 427,
+    'Repeating_Blips': 91,
+    #'Violin_Mode': 137,
+    'Power_Line': 450,
+    'Whistle': 146,
+    'Scratchy': 269,
+    #'Helix': 270,
+    'Light_Modulation': 400,
+    #'Wandering_Line': 21,
+    'Low_Frequency_Burst': 527,
+    'Koi_Fish': 709,
+    'Low_Frequency_Lines': 494,
+    'Blip': 1763,
+    '1400Ripples': 83,
+    'Chirp': 60,
+    'Extremely_Loud': 448,
     'None_of_the_Above': 16,
-    'Paired_Doves': 17,
-    'Tomte': 18,
-    'Air_Compressor': 19,
-    '1080Lines': 20,
-    'No_Glitch': 21,
+    'Paired_Doves': 26,
+    'Tomte': 93,
+    'Air_Compressor': 57,
+    #'1080Lines': 4,
+    'No_Glitch': 41,
+    'None_of_the_Above': 151
 }
 
 class dataToolkit(object):
@@ -99,7 +100,33 @@ class dataToolkit(object):
         sp = f.add_subplot(111)
         sp.plot(self.time, self.whitened)
         return f
-
+    
+    def getAllTimeSeries(self, white=True):
+        nsample = 0
+        for key in LABEL_MAP:
+            nsample += LABEL_MAP[key]
+            
+        #need to call getTimeSeries at least once before this..
+        self.getTimeSeries("Blip")
+        data = np.zeros((nsample, self.strain.shape[0]))
+        
+        row = 0
+        for key in LABEL_MAP:
+            i = 0
+            t = True
+            while(t == True):
+                t = self.getTimeSeries(key, i)
+                #self.whitenStrain()
+                #because Im a noob
+                if(row >= nsample - 1):
+                    break
+                data[row] = self.strain
+                row += 1
+                
+                    
+        return data
+        
+                
     def getExtraFeatures(self):
         t = True
         i = 0
