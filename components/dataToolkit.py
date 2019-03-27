@@ -35,6 +35,31 @@ LABEL_MAP = {
     'None_of_the_Above': 151
 }
 
+LABEL_TO_INT = {
+    'Scattered_Light': 0,
+    'Repeating_Blips': 1,
+    #'Violin_Mode': 137,
+    'Power_Line': 2,
+    'Whistle': 3,
+    'Scratchy': 4,
+    #'Helix': 270,
+    'Light_Modulation': 5,
+    #'Wandering_Line': 21,
+    'Low_Frequency_Burst': 6,
+    'Koi_Fish': 7,
+    'Low_Frequency_Lines': 8,
+    'Blip': 9,
+    '1400Ripples': 10,
+    'Chirp': 11,
+    'Extremely_Loud': 12,
+    'None_of_the_Above': 13,
+    'Paired_Doves': 14,
+    'Tomte': 15,
+    'Air_Compressor': 16,
+    #'1080Lines': 4,
+    'No_Glitch': 17,
+    'None_of_the_Above': 18
+}
 class dataToolkit(object):
     def __init__(self):
         data_dir = os.path.join(os.path.dirname(os.getcwd()),"data")
@@ -109,6 +134,7 @@ class dataToolkit(object):
         #need to call getTimeSeries at least once before this..
         self.getTimeSeries("Blip")
         data = np.zeros((nsample, self.strain.shape[0]))
+        labels = np.zeros(nsample)
         
         row = 0
         for key in LABEL_MAP:
@@ -121,10 +147,12 @@ class dataToolkit(object):
                 if(row >= nsample - 1):
                     break
                 data[row] = self.strain
+                labels[row] = LABEL_TO_INT[key]
                 row += 1
+                i+=1
                 
                     
-        return data
+        return data, labels
         
                 
     def getExtraFeatures(self):
